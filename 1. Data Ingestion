@@ -1,0 +1,36 @@
+import os
+from utils.web_scraper import scrape_website
+from utils.vector_store import VectorStore
+from langchain.embeddings import OpenAIEmbeddings
+
+# Configuration
+URLS = ["https://example.com"]  # Replace with target websites
+VECTOR_DB_PATH = "vector_store"  # Directory to save the vector database
+CHUNK_SIZE = 500
+
+# Initialize embedding model
+embedding_model = OpenAIEmbeddings()
+
+# Initialize vector database
+vector_store = VectorStore(VECTOR_DB_PATH)
+
+def ingest_data():
+    for url in URLS:
+        print(f"Scraping {url}...")
+        content = scrape_website(url)
+
+        print("Segmenting content...")
+        chunks = [content[i:i + CHUNK_SIZE] for i in range(0, len(content), CHUNK_SIZE)]
+
+        print("Generating embeddings...")
+        embeddings = [embedding_model.embed(chunk) for chunk in chunks]
+
+        print("Storing embeddings...")
+        for chunk, embedding in zip(chunks, embeddings):
+            vector_store.add(chunk, embedding, metadata={"url": url})
+    
+    print("Data ingestion completed.")
+    vector_store.save()
+
+if __name__ == "__main__":
+    ingest_data()
